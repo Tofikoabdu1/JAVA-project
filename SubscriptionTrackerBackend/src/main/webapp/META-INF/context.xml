@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+    <!-- Remove or comment out the Resource configuration for now -->
+    <!-- We'll use DatabaseConnection.java instead -->
+    
+    <!-- 
+    <Resource name="jdbc/subscriptionDB"
+              auth="Container"
+              type="javax.sql.DataSource"
+              maxTotal="100"
+              maxIdle="30"
+              maxWaitMillis="10000"
+              username="root"
+              password="Tofik2793"
+              driverClassName="com.mysql.cj.jdbc.Driver"
+              url="jdbc:mysql://localhost:3307/subscription_tracker?useSSL=false&amp;serverTimezone=UTC"/>
+    -->
+    
+    <!-- Session timeout in minutes -->
+    <SessionCookie secure="true" httpOnly="true" />
+</Context>
