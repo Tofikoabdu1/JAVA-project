@@ -9,6 +9,13 @@ import java.io.IOException;
 @WebFilter("/*")
 public class CorsFilter implements Filter {
     
+    // Define allowed origins
+    private static final String[] ALLOWED_ORIGINS = {
+        "http://localhost:5173",  // Vite dev server
+        "http://localhost:3000",  // React dev server
+        "http://127.0.0.1:5173"   // Alternative localhost
+    };
+    
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         // Initialization code
@@ -21,31 +28,44 @@ public class CorsFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         
-        // ACCEPT ALL ORIGINS - For development only!
+        // Get the origin from request
         String origin = httpRequest.getHeader("Origin");
-        if (origin == null) {
-            origin = "*";
-        }
         
-        // Set CORS headers - Allow from ANY origin
-        httpResponse.setHeader("Access-Control-Allow-Origin", origin);
+        // Check if origin is allowed
+        String allowedOrigin = checkOrigin(origin);
+        
+        // Set CORS headers with specific allowed origin
+        httpResponse.setHeader("Access-Control-Allow-Origin", allowedOrigin);
         httpResponse.setHeader("Access-Control-Allow-Methods", 
-            "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH");
+            "GET, POST, PUT, DELETE, OPTIONS");
         httpResponse.setHeader("Access-Control-Allow-Headers", 
-            "Origin, X-Requested-With, Content-Type, Accept, Authorization, " +
-            "Cache-Control, Pragma, Expires");
+            "Origin, Content-Type, Accept, Authorization, X-Requested-With");
         httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
-        httpResponse.setHeader("Access-Control-Max-Age", "86400"); // 24 hours
+        httpResponse.setHeader("Access-Control-Max-Age", "3600");
         
         // Handle preflight OPTIONS request
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
             httpResponse.setStatus(HttpServletResponse.SC_OK);
-            httpResponse.getWriter().flush();
-            return; // Stop here for OPTIONS
+            return; // Don't continue the chain for OPTIONS
         }
         
         // Pass request down the filter chain
         chain.doFilter(request, response);
+    }
+    
+    private String checkOrigin(String origin) {
+        if (origin == null) {
+            return ""; // No origin header, return empty
+        }
+        
+        // Check if origin is in allowed list
+        for (String allowed : ALLOWED_ORIGINS) {
+            if (allowed.equals(origin)) {
+                return origin; // Return the specific origin
+            }
+        }
+        
+        return ""; // Origin not allowed, return empty
     }
     
     @Override

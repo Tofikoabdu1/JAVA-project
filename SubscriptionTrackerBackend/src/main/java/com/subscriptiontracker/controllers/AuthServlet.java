@@ -22,10 +22,10 @@ public class AuthServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
+//response.setHeader("Access-Control-Allow-Origin", "*");
+//response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//response.setHeader("Access-Control-Allow-Credentials", "true");
         
         String path = request.getPathInfo();
         
@@ -54,10 +54,10 @@ response.setHeader("Access-Control-Allow-Credentials", "true");
     private void handleRegister(HttpServletRequest request, HttpServletResponse response) 
         throws IOException {
         // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
+//response.setHeader("Access-Control-Allow-Origin", "*");
+//response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//response.setHeader("Access-Control-Allow-Credentials", "true");
     
     try {
         Map<String, String> requestBody = objectMapper.readValue(
@@ -99,10 +99,10 @@ response.setHeader("Access-Control-Allow-Credentials", "true");
    private void handleLogin(HttpServletRequest request, HttpServletResponse response) 
         throws IOException {
        // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
+//response.setHeader("Access-Control-Allow-Origin", "*");
+//response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//response.setHeader("Access-Control-Allow-Credentials", "true");
     
     try {
         Map<String, String> requestBody = objectMapper.readValue(
@@ -152,10 +152,10 @@ response.setHeader("Access-Control-Allow-Credentials", "true");
     private void handleLogout(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {
         // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
+//response.setHeader("Access-Control-Allow-Origin", "*");
+//response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//response.setHeader("Access-Control-Allow-Credentials", "true");
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
