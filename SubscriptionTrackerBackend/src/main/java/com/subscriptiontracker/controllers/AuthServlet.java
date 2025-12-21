@@ -18,14 +18,23 @@ public class AuthServlet extends HttpServlet {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AuthService authService = new AuthService();
     
+    private boolean isJsonRequest(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        String accept = request.getHeader("Accept");
+        String xrw = request.getHeader("X-Requested-With");
+        return (contentType != null && contentType.contains("application/json"))
+                || (accept != null && accept.contains("application/json"))
+                || (xrw != null && xrw.equalsIgnoreCase("XMLHttpRequest"));
+    }
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
+//response.setHeader("Access-Control-Allow-Origin", "*");
+//response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//response.setHeader("Access-Control-Allow-Credentials", "true");
         
         String path = request.getPathInfo();
         
@@ -52,110 +61,144 @@ response.setHeader("Access-Control-Allow-Credentials", "true");
     }
     
     private void handleRegister(HttpServletRequest request, HttpServletResponse response) 
-        throws IOException {
-        // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
-    
-    try {
-        Map<String, String> requestBody = objectMapper.readValue(
-            request.getReader(), 
-            new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {}
-        );
-        
-        String email = requestBody.get("email");
-        String username = requestBody.get("username");
-        String password = requestBody.get("password");
-        
-        // Validate input
-        if (email == null || username == null || password == null ||
-            email.trim().isEmpty() || username.trim().isEmpty() || password.trim().isEmpty()) {
-            
-            JsonResponse.sendError(response, HttpServletResponse.SC_BAD_REQUEST, 
-                                  "All fields are required");
-            return;
+        throws IOException, ServletException {
+        try {
+            String email;
+            String username;
+            String password;
+
+            if (isJsonRequest(request)) {
+                Map<String, String> requestBody = objectMapper.readValue(
+                    request.getReader(), 
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {}
+                );
+                email = requestBody.get("email");
+                username = requestBody.get("username");
+                password = requestBody.get("password");
+            } else {
+                email = request.getParameter("email");
+                username = request.getParameter("username");
+                password = request.getParameter("password");
+            }
+
+            if (email == null || username == null || password == null ||
+                email.trim().isEmpty() || username.trim().isEmpty() || password.trim().isEmpty()) {
+                if (isJsonRequest(request)) {
+                    JsonResponse.sendError(response, HttpServletResponse.SC_BAD_REQUEST, "All fields are required");
+                } else {
+                    request.setAttribute("error", "All fields are required");
+                    request.getRequestDispatcher("/register.jsp").forward(request, response);
+                }
+                return;
+            }
+
+            Map<String, Object> result = authService.register(email, username, password);
+
+            if ((boolean) result.get("success")) {
+                User user = (User) result.get("user");
+                user.setPasswordHash(null);
+                if (isJsonRequest(request)) {
+                    JsonResponse.sendSuccess(response, "Registration successful", user);
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/login.jsp");
+                }
+            } else {
+                if (isJsonRequest(request)) {
+                    JsonResponse.sendError(response, HttpServletResponse.SC_BAD_REQUEST, (String) result.get("message"));
+                } else {
+                    request.setAttribute("error", (String) result.get("message"));
+                    request.getRequestDispatcher("/register.jsp").forward(request, response);
+                }
+            }
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Registration error", e);
+            if (isJsonRequest(request)) {
+                JsonResponse.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Server error occurred");
+            } else {
+                request.setAttribute("error", "Server error occurred");
+                request.getRequestDispatcher("/register.jsp").forward(request, response);
+            }
         }
-        
-        Map<String, Object> result = authService.register(email, username, password);
-        
-        if ((boolean) result.get("success")) {
-            User user = (User) result.get("user"); // Cast to User
-            user.setPasswordHash(null); // Remove password hash
-            JsonResponse.sendSuccess(response, "Registration successful", user);
-        } else {
-            JsonResponse.sendError(response, HttpServletResponse.SC_BAD_REQUEST, 
-                                  (String) result.get("message"));
-        }
-        
-    } catch (Exception e) {
-        LOGGER.log(Level.SEVERE, "Registration error", e);
-        JsonResponse.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                              "Server error occurred");
     }
-}
     
    private void handleLogin(HttpServletRequest request, HttpServletResponse response) 
         throws IOException {
-       // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
-    
     try {
-        Map<String, String> requestBody = objectMapper.readValue(
-            request.getReader(), 
-            new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {}
-        );
-        
-        String emailOrUsername = requestBody.get("emailOrUsername");
-        String password = requestBody.get("password");
-        
+        String emailOrUsername;
+        String password;
+
+        if (isJsonRequest(request)) {
+            Map<String, String> requestBody = objectMapper.readValue(
+                request.getReader(), 
+                new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {}
+            );
+            emailOrUsername = requestBody.get("emailOrUsername");
+            password = requestBody.get("password");
+        } else {
+            emailOrUsername = request.getParameter("emailOrUsername");
+            password = request.getParameter("password");
+        }
+
         if (emailOrUsername == null || password == null ||
             emailOrUsername.trim().isEmpty() || password.trim().isEmpty()) {
-            
-            JsonResponse.sendError(response, HttpServletResponse.SC_BAD_REQUEST, 
-                                  "Email/Username and password are required");
+            if (isJsonRequest(request)) {
+                JsonResponse.sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Email/Username and password are required");
+            } else {
+                request.setAttribute("error", "Email/Username and password are required");
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+            }
             return;
         }
-        
+
         Map<String, Object> result = authService.login(emailOrUsername, password);
-        
+
         if ((boolean) result.get("success")) {
-            // FIX: Get the User object properly
-            User user = (User) result.get("user"); // Cast to User, not Map
-            
-            // Create session
+            User user = (User) result.get("user");
+
             HttpSession session = request.getSession(true);
             session.setAttribute("userId", user.getId());
             session.setAttribute("username", user.getUsername());
-            session.setMaxInactiveInterval(30 * 60); // 30 minutes
-            
-            // Remove password hash before sending response
+            session.setMaxInactiveInterval(30 * 60);
+
             user.setPasswordHash(null);
-            
-            JsonResponse.sendSuccess(response, "Login successful", user);
+
+            if (isJsonRequest(request)) {
+                JsonResponse.sendSuccess(response, "Login successful", user);
+            } else {
+                response.sendRedirect(request.getContextPath() + "/dashboard.jsp");
+            }
         } else {
-            JsonResponse.sendError(response, HttpServletResponse.SC_UNAUTHORIZED, 
-                                  (String) result.get("message"));
+            if (isJsonRequest(request)) {
+                JsonResponse.sendError(response, HttpServletResponse.SC_UNAUTHORIZED, (String) result.get("message"));
+            } else {
+                request.setAttribute("error", (String) result.get("message"));
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+            }
         }
-        
+
     } catch (Exception e) {
         LOGGER.log(Level.SEVERE, "Login error", e);
-        JsonResponse.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                              "Server error occurred");
+        if (isJsonRequest(request)) {
+            JsonResponse.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Server error occurred");
+        } else {
+            request.setAttribute("error", "Server error occurred");
+            try {
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+            } catch (Exception ex) {
+                // ignore forwarding exception
+            }
+        }
     }
 }
     
     private void handleLogout(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {
         // Add at the beginning of doPost, doGet, etc.
-response.setHeader("Access-Control-Allow-Origin", "*");
-response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-response.setHeader("Access-Control-Allow-Credentials", "true");
+//response.setHeader("Access-Control-Allow-Origin", "*");
+//response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//response.setHeader("Access-Control-Allow-Credentials", "true");
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();

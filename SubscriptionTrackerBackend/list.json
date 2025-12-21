@@ -1,0 +1,1 @@
+{"data":[{"id":16,"userId":12,"name":"TestSub","amount":9.99,"dueDay":15,"nextDueDate":1768424400000,"createdAt":1766176433000,"updatedAt":1766176433000}],"message":"Subscriptions retrieved","status":200}

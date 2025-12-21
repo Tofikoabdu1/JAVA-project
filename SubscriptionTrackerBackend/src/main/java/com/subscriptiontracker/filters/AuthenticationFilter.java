@@ -24,12 +24,12 @@ public class AuthenticationFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         
         // ACCEPT ALL ORIGINS
-        httpResponse.setHeader("Access-Control-Allow-Origin", "*");
-        httpResponse.setHeader("Access-Control-Allow-Methods", 
-            "GET, POST, PUT, DELETE, OPTIONS");
-        httpResponse.setHeader("Access-Control-Allow-Headers", 
-            "Content-Type, Authorization, X-Requested-With");
-        httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
+//        httpResponse.setHeader("Access-Control-Allow-Origin", "*");
+//        httpResponse.setHeader("Access-Control-Allow-Methods", 
+//            "GET, POST, PUT, DELETE, OPTIONS");
+//        httpResponse.setHeader("Access-Control-Allow-Headers", 
+//            "Content-Type, Authorization, X-Requested-With");
+//        httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
         
         // Allow OPTIONS requests (CORS preflight)
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {

@@ -1,13 +1,5 @@
 package com.subscriptiontracker.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.subscriptiontracker.dao.SubscriptionDAO;
-import com.subscriptiontracker.models.Subscription;
-import com.subscriptiontracker.services.DateCalculator;
-import com.subscriptiontracker.utils.JsonResponse;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.*;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -15,6 +7,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.subscriptiontracker.dao.SubscriptionDAO;
+import com.subscriptiontracker.models.Subscription;
+import com.subscriptiontracker.services.DateCalculator;
+import com.subscriptiontracker.utils.JsonResponse;
 
 @WebServlet("/api/subscriptions/*")
 public class SubscriptionServlet extends HttpServlet {
@@ -26,14 +31,13 @@ public class SubscriptionServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
-        HttpSession session = request.getSession(false);
-        int userId = (int) session.getAttribute("userId");
-        
+        Integer userId = getUserIdFromSession(request, response);
+        if (userId == null) return; // response already sent inside helper
+
         try {
             List<Subscription> subscriptions = subscriptionDAO.findByUserId(userId);
             JsonResponse.sendSuccess(response, "Subscriptions retrieved", subscriptions);
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error retrieving subscriptions", e);
             JsonResponse.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
@@ -49,10 +53,9 @@ public class SubscriptionServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
-        HttpSession session = request.getSession(false);
-        int userId = (int) session.getAttribute("userId");
-        
+        Integer userId = getUserIdFromSession(request, response);
+        if (userId == null) return;
+
         try {
             Map<String, Object> requestBody = objectMapper.readValue(
                 request.getReader(), 
@@ -128,10 +131,9 @@ public class SubscriptionServlet extends HttpServlet {
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
-        HttpSession session = request.getSession(false);
-        int userId = (int) session.getAttribute("userId");
-        
+        Integer userId = getUserIdFromSession(request, response);
+        if (userId == null) return;
+
         try {
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/")) {
@@ -240,10 +242,9 @@ public class SubscriptionServlet extends HttpServlet {
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
-        HttpSession session = request.getSession(false);
-        int userId = (int) session.getAttribute("userId");
-        
+        Integer userId = getUserIdFromSession(request, response);
+        if (userId == null) return;
+
         try {
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/")) {
@@ -277,6 +278,29 @@ public class SubscriptionServlet extends HttpServlet {
             LOGGER.log(Level.SEVERE, "Error deleting subscription", e);
             JsonResponse.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
                                   "Error deleting subscription");
+        }
+    }
+
+    private Integer getUserIdFromSession(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            JsonResponse.sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Please login first");
+            return null;
+        }
+        Object userIdObj = session.getAttribute("userId");
+        if (userIdObj == null) {
+            JsonResponse.sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Session expired, please login again");
+            return null;
+        }
+        try {
+            return (Integer) userIdObj;
+        } catch (ClassCastException e) {
+            try {
+                return Integer.parseInt(String.valueOf(userIdObj));
+            } catch (NumberFormatException ex) {
+                JsonResponse.sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid session state");
+                return null;
+            }
         }
     }
 }
